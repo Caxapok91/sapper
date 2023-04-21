@@ -6,7 +6,7 @@ import re
 
 
 class Mybutton(Button):
-    
+
     def __init__(self, master, x, y, number=0, *args, **kwargs):
         super(Mybutton, self).__init__(master, width=3, font='Calibri 15 bold', *args, **kwargs)
         self.x = x
@@ -26,9 +26,8 @@ class Saper:
     ROW = 5
     COLUMNS = 5
     MINES = 5
-    IS_GAMEOVER = False
-    #add-------------------------------------------
-    IS_FIRST_ClICK = True
+    IS_GAMEROVER = False
+    IS_FIRST_CLICK = True
 
     def __init__(self):
         self.buttons = []
@@ -36,9 +35,6 @@ class Saper:
             temp = []
             for j in range(self.COLUMNS + 2):
                 btn = Mybutton(self.window, x=i, y=j)
-                #delete----------------------------
-                #btn.config(text='b', command=lambda button=btn: self.click(button))
-                #add
                 btn.config(command=lambda button=btn: self.click(button))
                 btn.bind('<Button-3>', self.right_click)
                 temp.append(btn)
@@ -61,8 +57,6 @@ class Saper:
             for j in range(1, self.COLUMNS + 1):
                 btn = self.buttons[i][j]
                 btn.number = count
-                #delete------------------------
-                #btn.config(text=btn.number)
                 btn.grid(row=i, column=j, stick='NWES')
                 count += 1
         for i in range(1, self.ROW + 1):
@@ -73,9 +67,7 @@ class Saper:
         self.lbl_time = Label(text='click button')
         self.lbl_time.grid(row=0, column=1, columnspan=(self.COLUMNS // 2))
         self.lbl_mine = Label(text=f'Flags {self.count_flag}')
-        self.lbl_mine.grid(row=0, column=(self.COLUMNS // 2)+1, columnspan=(self.COLUMNS // 2))
-
-
+        self.lbl_mine.grid(row=0, column=(self.COLUMNS // 2) + 1, columnspan=(self.COLUMNS // 2))
 
     def create_setting_win(self):
         def change_lvl(mines, row, col):
@@ -119,9 +111,8 @@ class Saper:
         [child.destroy() for child in self.window.winfo_children()]
         self.__init__()
         self.create_widgets()
-        self.IS_GAMEOVER = False
-        #add---------------------------------------
-        self.IS_FIRST_ClICK = True
+        self.IS_GAMEROVER = False
+        self.IS_FIRST_CLICK = True
 
     def change_settings(self, row: Entry, column: Entry, mines: Entry):
         try:
@@ -135,91 +126,73 @@ class Saper:
         self.reload()
 
     def create_stat_win(self):
-        with open('logs.txt','r') as logs:
+        with open('logs.txt', 'r') as logs:
             text = logs.read()
-            list_game_time = re.findall(r':(\w+)',text)
-            list_game_result = re.findall(r'-(\w+)',text)
-        time =0
+            list_game_time = re.findall(r':(\w+)', text)
+            list_game_result = re.findall(r'-(\w+)', text)
+        time = 0
         for i in list_game_time:
-            time+=int(i)
-        time_avg = time/len(list_game_time)
-        win_avg = list_game_result.count('win')/len(list_game_result)
-        showinfo('Statistics',f'You plaed {len(list_game_result)}\n'
-                              f'You win rating {win_avg*100}%\n'
-                              f'Average game time {time_avg:.2f} sec')
-    def right_click(self,event):
+            time += int(i)
+        time_avg = time / len(list_game_time)
+        win_avg = list_game_result.count('win') / len(list_game_result)
+        showinfo('Statistics', f'You plaed {len(list_game_result)}\n'
+                               f'You win rating {win_avg * 100}%\n'
+                               f'Average game time {time_avg:.2f} sec')
+
+    def right_click(self):
         pass
 
     def click(self, clicked_button: Mybutton):
-        #delete------------------------
-        # print(clicked_button.number)
-        # self.time_start = time.time()
-        # self.tick()
-        # print(clicked_button.is_mine)
-        
-        # with open('logs.txt','a') as logs:
-        #     logs.write(f'result-win time:{random.randrange(20)}\n')
-        #-----------------------------
-        #add
-        if self.IS_GAMEOVER:
+        print(clicked_button.number)
+
+        with open('logs.txt', 'a') as logs:
+            logs.write(f'result-win time:{random.randrange(20)}\n')
+        if self.IS_GAMEROVER:
             return
-        if self.IS_FIRST_ClICK:
+        if self.IS_FIRST_CLICK:
             self.time_start = time.time()
             self.insert_mines(clicked_button.number)
-            self.print_buttons()
+            self.print_mines()
             self.tick()
-            self.IS_FIRST_ClICK = False
-        #print(clicked_button.is_mine)
-        #тут добавляется открытие кнопки и то что в ней внутри
+            self.IS_FIRST_CLICK = False
         if not clicked_button.is_mine:
-            clicked_button.config(text=0, disabledforeground="black")
+            clicked_button.config(text = 0,disabledforeground='black')
             clicked_button.is_open = True
         else:
-            clicked_button.config(text='*', disabledforeground="black")
+            clicked_button.config(text="*",disabledforeground='black')
             clicked_button.is_open = True
-            
-        
-        
-        clicked_button.config(foreground='black', relief=SUNKEN)
-        #можно проверить как вставились мины
-            
-    #add mines-----------------------------------------------------
+        clicked_button.config(foreground='black',relief = SUNKEN)
     def get_mine_places(self, exlude_number: int):
         indexes = list(range(1, self.COLUMNS * self.ROW + 1))
         indexes.remove(exlude_number)
         random.shuffle(indexes)
         return indexes[:self.MINES]
-    
+
     def insert_mines(self, number: int):
         self.index_mines = self.get_mine_places(number)
         print(f'mines in {self.index_mines}')
         for i in range(1, self.ROW + 1):
             for j in range(1, self.COLUMNS + 1):
                 btn = self.buttons[i][j]
-                #тут указвается каким индексам кнопопк присвоить мины
                 if btn.number in self.index_mines:
-                    btn.is_mine = True   
-                        
-    def print_buttons(self):
-        #тут печатается в консоли поле с минами
+                    btn.is_mine = True
+
+    def print_mines(self):
         for i in range(1, self.ROW + 1):
-            for j in range(1, self.COLUMNS + 1):
+            for j in range(1, self.COLUMNS):
                 btn = self.buttons[i][j]
                 if btn.is_mine:
                     print("b", end='')
                 else:
                     print(btn.count_bomb, end='')
-                    #count_bomb пока равен 0 в будущем напишем
-
             print()
-            
-            
+
     def tick(self):
-        if self.IS_GAMEOVER:
+        if self.IS_GAMEROVER:
             return
-        timer = time.time()- self.time_start
+        timer = time.time() - self.time_start
         self.lbl_time.config(text=f'Time:{timer:.0f}')
-        self.lbl_time.after(500,self.tick)
+        self.lbl_time.after(500, self.tick)
 
     def start(self):
         self.create_widgets()
