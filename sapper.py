@@ -4,6 +4,19 @@ from tkinter.messagebox import showinfo, showerror
 import time
 import re
 
+#add------------------------------
+colors = {
+    0: 'white',  # white
+    1: '#331fcf',  # синий
+    2: '#5acf1f',  # зеленый
+    3: '#c0cf1f',  # чуть желтый
+    4: '#cfa61f',  # чуть оранж
+    5: '#cf1f91',  # розовый
+    6: '#8f1171',  # чуть фиолетовый
+    7: '#b01c0e',  # красный
+    8: '#aba130'  # черный
+}
+
 
 class Mybutton(Button):
 
@@ -28,6 +41,9 @@ class Saper:
     MINES = 5
     IS_GAMEROVER = False
     IS_FIRST_CLICK = True
+
+
+
 
     def __init__(self):
         self.buttons = []
@@ -138,13 +154,32 @@ class Saper:
         showinfo('Statistics', f'You plaed {len(list_game_result)}\n'
                                f'You win rating {win_avg * 100}%\n'
                                f'Average game time {time_avg:.2f} sec')
-
-    def right_click(self):
-        pass
-
+    #add--------------------------------
+    def right_click(self,event):
+        
+        cur_btn = event.widget
+        print(f'you press {cur_btn.number}')
+    
+    
+    
+    #add new method for count bomb in cell
+    def count_mines_in_buttons(self):
+        for i in range(1, self.ROW + 1):
+            for j in range(1, self.COLUMNS + 1):
+                btn = self.buttons[i][j]
+                count_bomb = 0
+                if not btn.is_mine:
+                    for row_dx in [-1, 0, 1]:
+                        for col_dx in [-1, 0, 1]:
+                            neighbour = self.buttons[i + row_dx][j + col_dx]
+                            if neighbour.is_mine:
+                                count_bomb += 1
+                btn.count_bomb = count_bomb
+    
+    
     def click(self, clicked_button: Mybutton):
-        print(clicked_button.number)
 
+        #тут()
         with open('logs.txt', 'a') as logs:
             logs.write(f'result-win time:{random.randrange(20)}\n')
         if self.IS_GAMEROVER:
@@ -152,16 +187,57 @@ class Saper:
         if self.IS_FIRST_CLICK:
             self.time_start = time.time()
             self.insert_mines(clicked_button.number)
+            #add----------------------
+            self.count_mines_in_buttons()
             self.print_mines()
+            self.open_all_buttons()
             self.tick()
             self.IS_FIRST_CLICK = False
-        if not clicked_button.is_mine:
-            clicked_button.config(text = 0,disabledforeground='black')
+
+        # if not clicked_button.is_mine:
+        #     clicked_button.config(text = 0,disabledforeground='black')
+        #     clicked_button.is_open = True
+        # else:
+        #     clicked_button.config(text="*",disabledforeground='black')
+        #     clicked_button.is_open = True
+        # clicked_button.config(foreground='black',relief = SUNKEN)
+        #новое условие условие открывает миныч
+        if clicked_button.is_mine:
+            clicked_button.config(text = '*',bg='red',disabledforeground='black')
             clicked_button.is_open = True
+            self.IS_GAMEROVER = True
+            for i in range(1,self.ROW+1):
+                for j in range(1,self.COLUMNS+1):
+                    btn = self.buttons[i][j]
+                    if btn.is_mine:
+                        btn['text'] = '*'
+            showinfo('Game over', f'You lose\n'
+                                  f'You spent {self.timer:.0f} sec\n'
+                                  f'and find {self.MINES - self.count_flag} mines')
+        #можно запустить проверить как проигрывает игрок
+        #add запись логов так же можно удалить из т165 строки
+            with open('logs.txt', 'a') as logs:
+                logs.write(f'result-lose time:{self.timer:.0f}\n')
         else:
-            clicked_button.config(text="*",disabledforeground='black')
-            clicked_button.is_open = True
-        clicked_button.config(foreground='black',relief = SUNKEN)
+            color = colors.get(clicked_button.count_bomb,'black')
+            if clicked_button.count_bomb:
+                clicked_button.config(text = clicked_button.count_bomb, disabledforeground=color)
+                clicked_button.is_open = True
+
+        clicked_button.config(foreground=color, relief = SUNKEN)
+    #add ---------------------------------------------------------
+    def open_all_buttons(self):
+        for i in range(self.ROW + 1):
+            for j in range(self.COLUMNS + 1):
+                btn = self.buttons[i][j]
+                if btn.is_mine:
+                    btn.config(text='*', bg='red', disabledforeground='black')
+
+                elif btn.count_bomb in colors:
+                    color = colors.get(btn.count_bomb, 'black')
+                    btn.config(text=btn.count_bomb, fg=color)
+
+        
     def get_mine_places(self, exlude_number: int):
         indexes = list(range(1, self.COLUMNS * self.ROW + 1))
         indexes.remove(exlude_number)
@@ -190,12 +266,14 @@ class Saper:
     def tick(self):
         if self.IS_GAMEROVER:
             return
-        timer = time.time() - self.time_start
-        self.lbl_time.config(text=f'Time:{timer:.0f}')
+        self.timer = time.time() - self.time_start
+        self.lbl_time.config(text=f'Time:{self.timer:.0f}')
         self.lbl_time.after(500, self.tick)
+    
 
     def start(self):
         self.create_widgets()
+        
         self.window.mainloop()
 
 
